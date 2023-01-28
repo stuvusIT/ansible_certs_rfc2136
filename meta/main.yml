@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: Insert author(s) here
+  description: Insert description here
+  company: stuvus (https://stuvus.uni-stuttgart.de)
+
+  license: MIT
+
+  min_ansible_version: 2.5
+
+  platforms:
+    - name: Debian
+      versions:
+        - buster
+
+  galaxy_tags:
+    - Insert ansible galaxy tags here
+
+dependencies: []
