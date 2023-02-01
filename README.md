@@ -1,6 +1,7 @@
 # Role Name
 
 This role obtains TLS certificates from Let's Encrypt via the ACME-DNS01 mechanism.
+The certificates are placed in a subfolder of `/etc/lego/certificates`, that is named after the fist domain of the certificate.
 
 
 
