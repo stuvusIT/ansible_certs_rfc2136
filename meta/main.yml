@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  author: Insert author(s) here
-  description: Insert description here
+  author: Sven Feyerabend
+  description: Installs lego and obtains a certificate from Let's Encrypt
   company: stuvus (https://stuvus.uni-stuttgart.de)
 
   license: MIT
@@ -14,6 +14,8 @@ galaxy_info:
         - buster
 
   galaxy_tags:
-    - Insert ansible galaxy tags here
+    - certificates
+    - rfc2136
+    - debian
 
 dependencies: []

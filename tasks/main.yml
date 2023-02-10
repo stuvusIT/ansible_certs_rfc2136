@@ -1,2 +1,86 @@
 ---
+- block:
+  - name: Determine latest GitHub release (local)
+    delegate_to: localhost
+    become: false
+    uri:
+      url: "https://api.github.com/repos/go-acme/lego/releases/latest"
+      body_format: json
+    register: _github_release
+    until: _github_release.status == 200
+    retries: 5
 
+  - name: Set certs_rfc2136_lego_version
+    set_fact:
+      certs_rfc2136_lego_version: "{{ _github_release.json.tag_name
+        | regex_replace('^v?(.*)$', '\\1') }}"
+  when: (certs_rfc2136_lego_version == 'latest')
+  run_once: true
+
+- name: Create cache directory
+  file:
+    path: /var/cache/lego/{{ certs_rfc2136_lego_version }}
+    state: directory
+
+- name: Download lego
+  get_url:
+    url: "https://github.com/go-acme/lego/releases/download/v{{ certs_rfc2136_lego_version }}/lego_v{{ certs_rfc2136_lego_version }}_{{ ansible_system | lower }}_amd64.tar.gz"
+    dest: "/var/cache/lego/{{ certs_rfc2136_lego_version }}/lego-{{ certs_rfc2136_lego_version }}.tar.gz"
+    checksum: "sha256:https://github.com/go-acme/lego/releases/download/v{{ certs_rfc2136_lego_version }}/lego_{{ certs_rfc2136_lego_version }}_checksums.txt"
+
+- name: Unpack lego release
+  unarchive:
+    src: /var/cache/lego/{{ certs_rfc2136_lego_version }}/lego-{{ certs_rfc2136_lego_version }}.tar.gz
+    dest: /var/cache/lego/{{ certs_rfc2136_lego_version }}
+    remote_src: yes
+
+- name: Copy lego binary to /usr/local/bin
+  copy:
+    src: /var/cache/lego/{{ certs_rfc2136_lego_version }}/lego
+    dest: /usr/local/bin
+    mode: u=rwx,g=rx,o=rx
+    remote_src: yes
+
+- name: Create the lego base and related directories
+  file:
+    path: "{{ item }}"
+    mode: 0700
+    state: directory
+  loop:
+    - /etc/lego
+    - /etc/lego/certificates
+    - /etc/lego/hooks
+
+- name: Place post create hook
+  copy:
+    src: files/post-create-hook.sh
+    dest: /etc/lego/hooks/post-create-hook.sh
+    mode: 0544
+
+
+- name: Create TLS certificate
+  command: lego --accept-tos -m {{ certs_rfc2136_letsencrypt_mail | mandatory }} -d {{ ' -d '.join(item.domains) }} --dns rfc2136 run --run-hook="hooks/post-create-hook.sh"
+  args:
+    chdir: /etc/lego
+    creates: /etc/lego/.lego/certificates/{{ item.domains[0] }}.crt
+  environment:
+    # See   https://go-acme.github.io/lego/dns/rfc2136/
+    RFC2136_NAMESERVER: "{{ certs_rfc2136_dns_server }}"
+    RFC2136_TSIG_KEY: "{{ certs_rfc2136_key_name }}"
+    RFC2136_TSIG_ALGORITHM: "{{ certs_rfc2136_algorithm }}"
+    RFC2136_TSIG_SECRET: "{{ certs_rfc2136_key_secret }}"
+  loop: "{{ certs_rfc2136_certs }}"
+
+- name: Renew TLS certificate
+  command: lego --accept-tos -m {{ certs_rfc2136_letsencrypt_mail | mandatory }} -d {{ ' -d '.join(item.domains) }} --dns rfc2136 renew
+  args:
+    chdir: /etc/lego
+  environment:
+    # See   https://go-acme.github.io/lego/dns/rfc2136/
+    RFC2136_NAMESERVER: "{{ certs_rfc2136_dns_server }}"
+    RFC2136_TSIG_KEY: "{{ certs_rfc2136_key_name }}"
+    RFC2136_TSIG_ALGORITHM: "{{ certs_rfc2136_algorithm }}"
+    RFC2136_TSIG_SECRET: "{{ certs_rfc2136_key_secret }}"
+  register: renewoutput
+  loop: "{{ certs_rfc2136_certs }}"
+  changed_when: "'no renewal' not in renewoutput.stdout"
