@@ -43,7 +43,10 @@ The following example playbook assumes that you cloned this role to `roles/certs
           - example.com
         - domains:
           - example.org
+          reuse_key: True
 ```
+
+Optionally, one can set `reuse_key: True` (defaults to `False`) to reuse the existing key pair on certificate renewal.
 
 
 ## License

@@ -72,7 +72,7 @@
   loop: "{{ certs_rfc2136_certs }}"
 
 - name: Renew TLS certificate
-  command: lego --accept-tos -m {{ certs_rfc2136_letsencrypt_mail | mandatory }} -d {{ ' -d '.join(item.domains) }} --dns rfc2136 renew
+  command: lego --accept-tos -m {{ certs_rfc2136_letsencrypt_mail | mandatory }} -d {{ ' -d '.join(item.domains) }} --dns rfc2136 renew {% if item.reuse_key | default(False) %}--reuse-key{% endif %}
   args:
     chdir: /etc/lego
   environment:
