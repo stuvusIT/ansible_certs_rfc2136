@@ -59,7 +59,15 @@
 
 
 - name: Create TLS certificate
-  command: lego --accept-tos -m {{ certs_rfc2136_letsencrypt_mail | mandatory }} -d {{ ' -d '.join(item.domains) }} --dns rfc2136 run --run-hook="hooks/post-create-hook.sh"
+  command: >-
+    lego
+    --accept-tos
+    -m {{ certs_rfc2136_letsencrypt_mail | mandatory }}
+    -d {{ ' -d '.join(item.domains) }}
+    --pem
+    --dns rfc2136
+    run
+    --run-hook="hooks/post-create-hook.sh"
   args:
     chdir: /etc/lego
     creates: /etc/lego/.lego/certificates/{{ item.domains[0] }}.crt
@@ -72,7 +80,14 @@
   loop: "{{ certs_rfc2136_certs }}"
 
 - name: Renew TLS certificate
-  command: lego --accept-tos -m {{ certs_rfc2136_letsencrypt_mail | mandatory }} -d {{ ' -d '.join(item.domains) }} --dns rfc2136 renew
+  command: >-
+    lego
+    --accept-tos
+    -m {{ certs_rfc2136_letsencrypt_mail | mandatory }}
+    -d {{ ' -d '.join(item.domains) }}
+    --pem
+    --dns rfc2136
+    renew
   args:
     chdir: /etc/lego
   environment:
