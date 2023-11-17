@@ -83,4 +83,4 @@
     RFC2136_TSIG_SECRET: "{{ certs_rfc2136_key_secret }}"
   register: renewoutput
   loop: "{{ certs_rfc2136_certs }}"
-  changed_when: "'no renewal' not in renewoutput.stdout"
+  changed_when: "'no renewal' not in renewoutput.stderr"
